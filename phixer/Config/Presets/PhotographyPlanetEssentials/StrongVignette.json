@@ -1,0 +1,29 @@
+{
+  "info": {
+    "group": "Essentials by PhotographyPla.net", 
+    "name": "6.04 - Strong Vignette"
+  }, 
+  "filters": [
+    {
+      "parameters": [
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.45, 
+          "key": "inputRadius"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.35, 
+          "key": "inputIntensity"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.7, 
+          "key": "inputFalloff"
+        }
+      ], 
+      "key": "CenteredVignetteFilter"
+    }
+  ], 
+  "key": "../phixer/Config/Presets//PhotographyPlanetEssentials/StrongVignette.json"
+}

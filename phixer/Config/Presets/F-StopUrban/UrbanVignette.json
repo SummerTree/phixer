@@ -1,0 +1,29 @@
+{
+  "info": {
+    "group": "F-Stop Stop Urban Presets", 
+    "name": "Urban Vignette"
+  }, 
+  "filters": [
+    {
+      "parameters": [
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.23, 
+          "key": "inputRadius"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 1.0, 
+          "key": "inputIntensity"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 1.0, 
+          "key": "inputFalloff"
+        }
+      ], 
+      "key": "CenteredVignetteFilter"
+    }
+  ], 
+  "key": "../phixer/Config/Presets//F-StopUrban/UrbanVignette.json"
+}

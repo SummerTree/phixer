@@ -1,0 +1,29 @@
+{
+  "info": {
+    "group": "Essentials by PhotographyPla.net", 
+    "name": "6.02 - Soft Vignette"
+  }, 
+  "filters": [
+    {
+      "parameters": [
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.5, 
+          "key": "inputRadius"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.15, 
+          "key": "inputIntensity"
+        }, 
+        {
+          "type": "CIAttributeTypeScalar", 
+          "val": 0.5, 
+          "key": "inputFalloff"
+        }
+      ], 
+      "key": "CenteredVignetteFilter"
+    }
+  ], 
+  "key": "../phixer/Config/Presets//PhotographyPlanetEssentials/SoftVignette.json"
+}

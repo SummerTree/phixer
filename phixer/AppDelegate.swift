@@ -21,10 +21,11 @@ let themeColor = UIColor(red: 0.01, green: 0.41, blue: 0.22, alpha: 1.0)
 //let filterManager:FilterManager = FilterManager.sharedInstance
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
+class AppDelegate: UIResponder, UIApplicationDelegate, UINavigationControllerDelegate {
     var window: UIWindow?
+    var appCoordinator: AppCoordinator!
 
+    
     // MARK: - Core Data stack
     
     lazy var persistentContainer: NSPersistentContainer = {
@@ -33,8 +34,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
          application to it. This property is optional since there are legitimate error conditions that could cause the creation of the store 
          to fail.
          */
-        let container = NSPersistentContainer(name: "")
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+        let container = NSPersistentContainer(name: "phixerModel")
+        container.loadPersistentStores(completionHandler: { [weak self] (storeDescription, error) in
             if let error = error as NSError? {
                 /*
                  Typical reasons for an error here include:
@@ -51,8 +52,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }()
     
     
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    //private func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        print("===================== AppDelegate =====================")
         
         // XcodeColors setup
         setenv("XcodeColors", "YES", 0); // Enables XcodeColors (you obviously have to install it too)
@@ -72,21 +76,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         log.addDestination(console)
         //log.addDestination(file)
         //log.addDestination(cloud)
+
+        // set up the window
+        window = UIWindow(frame: UIScreen.main.bounds)
+        Coordinator.window = window
+
+        setupAds()
         
-        // set the global colour scheme
-        updateAppTheme()
+        // completion handler for splash screen
+        let completionHandler:()->Void = {
+            self.appCoordinator = AppCoordinator()
+            self.appCoordinator.startRequest(completion: { [weak self] in
+                print("AppCoordinator finished")
+            } )
+        }
         
-        // set up Google banner ad framework
-        // Use Firebase library to configure APIs
-        FirebaseApp.configure()
-        
-        //GADMobileAds.configure(withApplicationID: "ca-app-pub-3940256099942544~1458002511"); // Test ID, replace when ready
-        GADMobileAds.configure(withApplicationID: Admob.appID)
-        
+        // start the splash screen
+        let initApp = SplashScreenViewController()
+        initApp.completionHandler = completionHandler
+        window?.rootViewController = initApp
+        window?.makeKeyAndVisible()
         
         return true
     }
 
+    
     
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
@@ -96,6 +110,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        FilterConfiguration.commitChanges()
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
@@ -108,7 +123,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-        FilterLibrary.commitChanges()
+        FilterConfiguration.commitChanges()
     }
 
     
@@ -116,6 +131,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         ThemeManager.applyTheme(key: ThemeManager.getSavedTheme())
 
+    }
+
+    
+    private func setupAds() {
+        // set up Google banner ad framework. Use the Firebase library to configure APIs
+        FirebaseApp.configure()
+        
+        //GADMobileAds.configure(withApplicationID: "ca-app-pub-3940256099942544~1458002511"); // Test ID, replace when ready
+        //GADMobileAds.configure(withApplicationID: Admob.appID)
+        // appID has been moved to info.plist
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
     }
 
 }

@@ -28,6 +28,7 @@ class Database {
     fileprivate static var assignmentEntity: NSEntityDescription? = nil
     fileprivate static var presetEntity: NSEntityDescription? = nil
     fileprivate static var userChangesEntity: NSEntityDescription? = nil
+    fileprivate static var assetListEntity: NSEntityDescription? = nil
 
     
     // Table names
@@ -38,7 +39,8 @@ class Database {
     fileprivate static let assignmentName = "AssignmentEntity"
     fileprivate static let presetName = "PresetEntity"
     fileprivate static let userChangesName = "UserChangesEntity"
-    
+    fileprivate static let assetListName = "AssetListEntity"
+
     
     ///////////////////////////////////
     // MARK: - UTILITIES
@@ -133,6 +135,7 @@ class Database {
                 assignmentEntity = NSEntityDescription.entity(forEntityName: assignmentName, in: context!)!
                 userChangesEntity = NSEntityDescription.entity(forEntityName: userChangesName, in: context!)!
                 //presetEntity = NSEntityDescription.entity(forEntityName: presetName, in: context)!
+                assetListEntity = NSEntityDescription.entity(forEntityName: assetListName, in: context!)!
 
             } else {
                 print("Database.checkDatabase() - ERR: NIL context returned for Database")
@@ -147,7 +150,7 @@ class Database {
         
         checkDatabase()
         
-       // we determine whether the database has been populated by the presence of catagories
+       // we determine whether the database has been populated by the presence of categories
         let fetchRequest = NSFetchRequest<CategoryEntity>(entityName: categoryName)
         do {
             categories = try (context?.fetch(fetchRequest))!
@@ -199,14 +202,14 @@ class Database {
                 settingsRecord.key = settingsEntity?.key
                 settingsRecord.blendImage = settingsEntity?.blendImage
                 settingsRecord.editImage = settingsEntity?.editImage
-                settingsRecord.sampleImage = settingsEntity?.sampleImage
+                //settingsRecord.sampleImage = settingsEntity?.sampleImage
                 settingsRecord.configVersion = settingsEntity?.configVersion
            } else {
                 // build default settings
                 settingsRecord.key = settingsKey
                 settingsRecord.blendImage = ImageManager.getDefaultBlendImageName()
                 settingsRecord.editImage = ImageManager.getDefaultEditImageName()
-                settingsRecord.sampleImage = ImageManager.getDefaultSampleImageName()
+                //settingsRecord.sampleImage = ImageManager.getDefaultSampleImageName()
                 settingsRecord.configVersion = "2.0"
             }
         } catch let error as NSError {
@@ -215,7 +218,7 @@ class Database {
         }
         
 
-        print("getSettings() - key:\(settingsRecord.key) Sample:\(settingsRecord.sampleImage!) Blend:\(settingsRecord.blendImage!) Edit:\(settingsRecord.editImage!)")
+        print("getSettings() - key:\(settingsRecord.key) Blend:\(settingsRecord.blendImage!) Edit:\(settingsRecord.editImage!)")
         
         return settingsRecord
     }
@@ -258,7 +261,7 @@ class Database {
             if (settings.key == nil ) { settings.key = settingsKey }
             if ((settings.key?.isEmpty)! ) { settings.key = settingsKey }
             settingsEntity?.update(record:settings)
-            print("saveSettings() - Sample:\(settings.sampleImage!) Blend:\(settings.blendImage!) Edit:\(settings.editImage!)")
+            print("saveSettings() - Blend:\(settings.blendImage!) Edit:\(settings.editImage!)")
             
             save()
         }
@@ -292,12 +295,12 @@ class Database {
                     // clear all of the values and save
                     settings.key = settingsKey
                     settings.configVersion = "0.0"
-                    settings.sampleImage = ""
+                    //settings.sampleImage = ""
                     settings.blendImage = ""
                     settings.editImage = ""
 
                     settingsEntity?.update(record:settings)
-                    print("clearSettings() - Sample:\(settings.sampleImage!) Blend:\(settings.blendImage!) Edit:\(settings.editImage!)")
+                    print("clearSettings() - Blend:\(settings.blendImage!) Edit:\(settings.editImage!)")
                     
                     save()
                 }
@@ -306,7 +309,10 @@ class Database {
             print("clearSettings() - ERR: Could not fetch. \(error), \(error.userInfo)")
         }
         
-        
+        // free memory
+        settingList = []
+        settingsEntity = nil
+        context?.reset()
     }
     
     
@@ -711,5 +717,161 @@ class Database {
         }
         
     }
+    
+    
+    
+    
+    ///////////////////////////////////
+    // MARK: - Asset List
+    ///////////////////////////////////
+    
+    
+    
+    public static func getAssetListRecords() -> [AssetListRecord]{
+        var assetList:[AssetListRecord]
+        
+        checkDatabase()
+        assetList = []
+
+        let result = autoreleasepool { () -> [AssetListRecord] in
+            
+            let fetchRequest = NSFetchRequest<AssetListEntity>(entityName: assetListName)
+            do {
+                var assets = try (context?.fetch(fetchRequest))!
+                if (assets.count>0){
+                    for entity in assets {
+                        assetList.append(entity.toRecord())
+                    }
+                } else {
+                    print("getAssetListRecords() NO records found")
+                }
+                assets = []
+            } catch let error as NSError {
+                print("getAssetListRecords() Could not fetch. \(error), \(error.userInfo)")
+            }
+            
+            return assetList
+        }
+        return result
+        
+    }
+    
+    
+    
+    // retrieve a specific asset record
+    public static func getAssetListRecord(key: String) -> AssetListRecord?{
+        var assetRecord: AssetListRecord?
+        
+        checkDatabase()
+        let result = autoreleasepool { () -> AssetListRecord? in
+            
+            assetRecord = nil
+            
+            let fetchRequest = NSFetchRequest<AssetListEntity>(entityName: assetListName)
+            fetchRequest.predicate = NSPredicate(format: "key == %@", key)
+            do {
+                var assets = try (context?.fetch(fetchRequest))!
+                if (assets.count>0){
+                    assetRecord = assets[0].toRecord()
+                 } else {
+                    print("getAssetListRecords() NO records found")
+                }
+                assets = []
+            } catch let error as NSError {
+                print("getAssetListRecords() Could not fetch. \(error), \(error.userInfo)")
+            }
+            
+            return assetRecord
+        }
+        return result
+    }
+    
+    
+    // add a new AssetList entry. Data is saved
+    public static func addAssetListRecord(_ record: AssetListRecord){
+        
+        var assetEntity: AssetListEntity?
+        
+        checkDatabase()
+
+        assetEntity = NSEntityDescription.insertNewObject(forEntityName: assetListName, into: context!) as? AssetListEntity
+        
+        assetEntity?.update(record: record)
+        
+        save()
+        
+    }
+    
+    
+    // update an existing AssetList record. Data is saved
+    public static func updateAssetListRecord(_ record: AssetListRecord){
+        
+        checkDatabase()
+
+        let fetchRequest = NSFetchRequest<AssetListEntity>(entityName: assetListName)
+        fetchRequest.predicate = NSPredicate(format: "key == %@", record.key!)
+        do {
+            let assets = try (context?.fetch(fetchRequest))!
+            if (assets.count>0){
+                print("updateAssetListRecord() UPDATE AssetList: \(String(describing: record.key)) \(record.assets)")
+                assets[0].update(record: record)
+                save()
+            } else {
+                print("updateAssetListRecord() NO record found for: \(String(describing: record.key)). ADDING")
+                addAssetListRecord(record)
+            }
+        } catch let error as NSError {
+            print("updateAssetListRecord() Could not fetch. \(error), \(error.userInfo)")
+        }
+        
+    }
+    
+    
+    // remove an existing AssetList. Data is saved, i.e. permanent removal
+    public static func removeAssetListRecord(key: String){
+        
+        checkDatabase()
+
+        let fetchRequest = NSFetchRequest<AssetListEntity>(entityName: assetListName)
+        fetchRequest.predicate = NSPredicate(format: "key == %@", key)
+        do {
+            let assets = try (context?.fetch(fetchRequest))!
+            if (assets.count>0){
+                context?.delete(assets[0])
+                save()
+            } else {
+                print("updateAssetListRecord() NO record found for: \(key)")
+            }
+        } catch let error as NSError {
+            print("updateAssetListRecord() Could not fetch. \(error), \(error.userInfo)")
+        }
+        
+    }
+    
+    
+    // clear (delete) all asset records
+    public static func clearAssetListRecords() {
+        
+        checkDatabase()
+
+        print("Database.clearAssetListRecords()")
+        
+        let fetchRequest = NSFetchRequest<AssetListEntity>(entityName: assetListName)
+        do {
+            let records = try (context?.fetch(fetchRequest))!
+            if (records.count>0){
+                for rec in records {
+                    context?.delete(rec)
+                }
+            } else {
+                print("clearAssetListRecords() NO records found")
+            }
+        } catch let error as NSError {
+            print("clearAssetListRecords() Could not fetch. \(error), \(error.userInfo)")
+        }
+        
+    }
+
+    //-------
 
 }

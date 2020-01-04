@@ -20,12 +20,13 @@ class FilterDisplayView: UIView {
     
 
 
-    fileprivate var renderView: MetalImageView! = MetalImageView()
+    fileprivate var renderView: RenderView! = RenderView()
     
     fileprivate var initDone: Bool = false
     fileprivate var layoutDone: Bool = false
     fileprivate var filterManager = FilterManager.sharedInstance
-    
+    fileprivate var imgSize: CGSize = CGSize.zero
+
     
     fileprivate var currImageInput:CIImage? = nil
     fileprivate var currBlendInput:CIImage? = nil
@@ -55,13 +56,19 @@ class FilterDisplayView: UIView {
         super.layoutSubviews()
         
         log.debug("layout")
-        self.currImageInput = InputSource.getCurrentImage() // this can change
+
+        // set size to the screen resoultion to save memory
+        imgSize = UISettings.screenResolution
+        
+        currImageInput = EditManager.getPreviewImage(size:imgSize) // this can/will change
+        
         renderView?.frame = self.frame
         renderView?.image = self.currImageInput
-        renderView?.setImageSize(InputSource.getSize())
+        renderView?.setImageSize(imgSize)
         renderView?.frame = self.frame
         renderView?.backgroundColor = theme.backgroundColor
-        
+
+
         self.addSubview(renderView!)
         renderView?.fillSuperview()
        // self.bringSubview(toFront: renderView!)
@@ -78,8 +85,14 @@ class FilterDisplayView: UIView {
     
     
     open func setFilter(key:String){
-        //currFilterKey = filterManager.getSelectedFilter()
+        //currFilterKey = filterManager.getCurrentFilter()
         if (currFilterKey.isEmpty) || (key != currFilterKey) {
+            if (key != currFilterKey) {
+                filterManager.releaseFilterDescriptor(key: currFilterKey)
+                filterManager.releaseRenderView(key: currFilterKey)
+                //RenderView.reset()
+            }
+            
             currFilterKey = key
             currFilterDescriptor = filterManager.getFilterDescriptor(key: currFilterKey)
             EditManager.addPreviewFilter(currFilterDescriptor)
@@ -94,7 +107,7 @@ class FilterDisplayView: UIView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             let ciimage = self.renderView?.image
             if (ciimage != nil){
-                let cgimage = ciimage?.generateCGImage()
+                let cgimage = ciimage?.generateCGImage(size:(self.renderView?.image?.extent.size)!)
                 let image = UIImage(cgImage: cgimage!)
                 UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
             } else {
@@ -150,9 +163,11 @@ class FilterDisplayView: UIView {
                 log.debug("Running filter: \(self.currFilterKey)")
                 
                 //self.currImageInput = ImageManager.getCurrentSampleImage()!
-                self.currImageInput = InputSource.getCurrentImage()
-                self.renderView?.setImageSize(InputSource.getSize())
-                
+                //self.currImageInput = InputSource.getCurrentImage()
+                //self.renderView?.setImageSize(InputSource.getSize())
+                self.currImageInput = EditManager.getPreviewImage()
+                self.renderView?.setImageSize(EditManager.getImageSize())
+
                 // get current filter
                 //self.currFilterDescriptor = self.filterManager.getFilterDescriptor(key: self.currFilterKey)
                 
